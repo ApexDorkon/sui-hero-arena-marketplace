@@ -11,7 +11,6 @@ export const createHero = (
   // Convert power string → u64 (BigInt)
   const powerU64 = BigInt(power);
 
-  // Call Move function
   tx.moveCall({
     target: `${packageId}::hero::create_hero`,
     arguments: [

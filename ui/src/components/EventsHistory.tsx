@@ -7,106 +7,120 @@ export default function EventsHistory() {
 
   const eventQueries = useSuiClientQueries({
     queries: [
+      // Hero Created
       {
         method: "queryEvents",
         params: {
-          query: {
-            MoveEventType: `${packageId}::marketplace::HeroListed`,
-          },
+          query: { MoveEventType: `${packageId}::hero::HeroCreated` },
           limit: 20,
           order: "descending",
         },
-        queryKey: ["queryEvents", packageId, "HeroListed"],
+        queryKey: ["HeroCreated", packageId],
         enabled: !!packageId,
       },
+
+      // Hero Listed
       {
         method: "queryEvents",
         params: {
-          query: {
-            MoveEventType: `${packageId}::marketplace::HeroBought`,
-          },
+          query: { MoveEventType: `${packageId}::marketplace::HeroListed` },
           limit: 20,
           order: "descending",
         },
-        queryKey: ["queryEvents", packageId, "HeroBought"],
+        queryKey: ["HeroListed", packageId],
         enabled: !!packageId,
       },
+
+      // Hero Bought
       {
         method: "queryEvents",
         params: {
-          query: {
-            MoveEventType: `${packageId}::arena::ArenaCreated`,
-          },
+          query: { MoveEventType: `${packageId}::marketplace::HeroBought` },
           limit: 20,
           order: "descending",
         },
-        queryKey: ["queryEvents", packageId, "ArenaCreated"],
+        queryKey: ["HeroBought", packageId],
         enabled: !!packageId,
       },
+
+      // Hero Delisted
       {
         method: "queryEvents",
         params: {
-          query: {
-            MoveEventType: `${packageId}::arena::ArenaCompleted`,
-          },
+          query: { MoveEventType: `${packageId}::marketplace::HeroDelisted` },
           limit: 20,
           order: "descending",
         },
-        queryKey: ["queryEvents", packageId, "ArenaCompleted"],
+        queryKey: ["HeroDelisted", packageId],
+        enabled: !!packageId,
+      },
+
+      // Price Changed
+      {
+        method: "queryEvents",
+        params: {
+          query: { MoveEventType: `${packageId}::marketplace::HeroPriceChanged` },
+          limit: 20,
+          order: "descending",
+        },
+        queryKey: ["HeroPriceChanged", packageId],
+        enabled: !!packageId,
+      },
+
+      // Arena Created
+      {
+        method: "queryEvents",
+        params: {
+          query: { MoveEventType: `${packageId}::arena::ArenaCreated` },
+          limit: 20,
+          order: "descending",
+        },
+        queryKey: ["ArenaCreated", packageId],
+        enabled: !!packageId,
+      },
+
+      // Arena Completed
+      {
+        method: "queryEvents",
+        params: {
+          query: { MoveEventType: `${packageId}::arena::ArenaCompleted` },
+          limit: 20,
+          order: "descending",
+        },
+        queryKey: ["ArenaCompleted", packageId],
         enabled: !!packageId,
       },
     ],
   });
 
+  // Destructure event data
   const [
-    { data: listedEvents, isPending: isListedPending },
-    { data: boughtEvents, isPending: isBoughtPending },
-    { data: battleCreatedEvents, isPending: isBattleCreatedPending },
-    { data: battleCompletedEvents, isPending: isBattleCompletedPending },
+    { data: heroCreated },
+    { data: listedEvents },
+    { data: boughtEvents },
+    { data: delistedEvents },
+    { data: priceChangedEvents },
+    { data: arenaCreatedEvents },
+    { data: arenaCompletedEvents },
   ] = eventQueries;
 
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(Number(timestamp)).toLocaleString();
-  };
+  const formatTimestamp = (timestamp: string) =>
+    new Date(Number(timestamp)).toLocaleString();
 
-  const formatAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
+  const formatAddress = (address: string) =>
+    `${address.slice(0, 6)}...${address.slice(-4)}`;
 
-  const formatPrice = (price: string) => {
-    return (Number(price) / 1_000_000_000).toFixed(2);
-  };
-
-  if (
-    isListedPending ||
-    isBoughtPending ||
-    isBattleCreatedPending ||
-    isBattleCompletedPending
-  ) {
-    return (
-      <Card>
-        <Text>Loading events history...</Text>
-      </Card>
-    );
-  }
+  const formatPrice = (p: string) =>
+    (Number(p) / 1_000_000_000).toFixed(2);
 
   const allEvents = [
-    ...(listedEvents?.data || []).map((event) => ({
-      ...event,
-      type: "listed" as const,
-    })),
-    ...(boughtEvents?.data || []).map((event) => ({
-      ...event,
-      type: "bought" as const,
-    })),
-    ...(battleCreatedEvents?.data || []).map((event) => ({
-      ...event,
-      type: "battle_created" as const,
-    })),
-    ...(battleCompletedEvents?.data || []).map((event) => ({
-      ...event,
-      type: "battle_completed" as const,
-    })),
+    ...(heroCreated?.data || []).map((e) => ({ ...e, type: "created" })),
+    ...(listedEvents?.data || []).map((e) => ({ ...e, type: "listed" })),
+    ...(boughtEvents?.data || []).map((e) => ({ ...e, type: "bought" })),
+    ...(delistedEvents?.data || []).map((e) => ({ ...e, type: "delisted" })),
+    ...(priceChangedEvents?.data || []).map((e) => ({ ...e, type: "price_changed" })),
+    ...(arenaCreatedEvents?.data || []).map((e) => ({ ...e, type: "arena_created" })),
+    ...(arenaCompletedEvents?.data || []).map((e) => ({ ...e, type: "arena_completed" })),
   ].sort((a, b) => Number(b.timestampMs) - Number(a.timestampMs));
 
   return (
@@ -114,110 +128,97 @@ export default function EventsHistory() {
       <Heading size="6">Recent Events ({allEvents.length})</Heading>
 
       {allEvents.length === 0 ? (
-        <Card>
-          <Text>No events found</Text>
-        </Card>
+        <Card><Text>No events found</Text></Card>
       ) : (
         <Grid columns="1" gap="3">
           {allEvents.map((event, index) => {
-            const eventData = event.parsedJson as any;
+            const d = event.parsedJson as any;
 
             return (
-              <Card
-                key={`${event.id.txDigest}-${index}`}
-                style={{ padding: "16px" }}
-              >
-                <Flex direction="column" gap="2">
+              <Card key={`${event.id.txDigest}-${index}`} style={{ padding: "16px" }}>
+                <Flex direction="column" gap="2" >
+
+                  {/* Badge */}
                   <Flex align="center" gap="3">
                     <Badge
                       color={
-                        event.type === "listed"
+                        event.type === "created"
+                          ? "purple"
+                          : event.type === "listed"
                           ? "blue"
                           : event.type === "bought"
-                            ? "green"
-                            : event.type === "battle_created"
-                              ? "orange"
-                              : "red"
+                          ? "green"
+                          : event.type === "delisted"
+                          ? "yellow"
+                          : event.type === "price_changed"
+                          ? "orange"
+                          : event.type === "arena_created"
+                          ? "indigo"
+                          : "red"
                       }
-                      size="2"
                     >
-                      {event.type === "listed"
-                        ? "Hero Listed"
-                        : event.type === "bought"
-                          ? "Hero Bought"
-                          : event.type === "battle_created"
-                            ? "Arena Created"
-                            : "Battle Completed"}
+                      {
+                        {
+                          created: "Hero Created",
+                          listed: "Hero Listed",
+                          bought: "Hero Bought",
+                          delisted: "Hero Delisted",
+                          price_changed: "Price Changed",
+                          arena_created: "Arena Created",
+                          arena_completed: "Battle Completed",
+                        }[event.type]
+                      }
                     </Badge>
+
                     <Text size="3" color="gray">
                       {formatTimestamp(event.timestampMs!)}
                     </Text>
                   </Flex>
 
-                  <Flex align="center" gap="4" wrap="wrap">
-                    {(event.type === "listed" || event.type === "bought") && (
+                  {/* Event Details */}
+                  <Flex gap="4" wrap="wrap">
+                    {event.type === "created" && (
+                      <Text><strong>Hero ID:</strong> ...{d.hero_id.slice(-8)}</Text>
+                    )}
+
+                    {event.type === "listed" && (
                       <>
-                        <Text size="3">
-                          <strong>Price:</strong> {formatPrice(eventData.price)}{" "}
-                          SUI
-                        </Text>
-
-                        {event.type === "listed" ? (
-                          <Text size="3">
-                            <strong>Seller:</strong>{" "}
-                            {formatAddress(eventData.seller)}
-                          </Text>
-                        ) : (
-                          <Flex gap="4">
-                            <Text size="3">
-                              <strong>Buyer:</strong>{" "}
-                              {formatAddress(eventData.buyer)}
-                            </Text>
-                            <Text size="3">
-                              <strong>Seller:</strong>{" "}
-                              {formatAddress(eventData.seller)}
-                            </Text>
-                          </Flex>
-                        )}
-
-                        <Text
-                          size="3"
-                          color="gray"
-                          style={{ fontFamily: "monospace" }}
-                        >
-                          ID: {eventData.list_hero_id.slice(0, 8)}...
-                        </Text>
+                        <Text><strong>Price:</strong> {formatPrice(d.price)} SUI</Text>
+                        <Text><strong>Seller:</strong> {formatAddress(d.seller)}</Text>
                       </>
                     )}
 
-                    {event.type === "battle_created" && (
+                    {event.type === "bought" && (
                       <>
-                        <Text size="3">
-                          <strong>⚔️ Battle Arena Created</strong>
-                        </Text>
-                        <Text
-                          size="3"
-                          color="gray"
-                          style={{ fontFamily: "monospace" }}
-                        >
-                          ID: {eventData.arena_id.slice(0, 8)}...
-                        </Text>
+                        <Text><strong>Price:</strong> {formatPrice(d.price)} SUI</Text>
+                        <Text><strong>Buyer:</strong> {formatAddress(d.buyer)}</Text>
+                        <Text><strong>Seller:</strong> {formatAddress(d.seller)}</Text>
                       </>
                     )}
 
-                    {event.type === "battle_completed" && (
+                    {event.type === "delisted" && (
+                      <Text><strong>Seller:</strong> {formatAddress(d.seller)}</Text>
+                    )}
+
+                    {event.type === "price_changed" && (
                       <>
-                        <Text size="3">
-                          <strong>🏆 Winner:</strong> ...
-                          {eventData.winner_hero_id.slice(-8)}
-                        </Text>
-                        <Text size="3">
-                          <strong>💀 Loser:</strong> ...
-                          {eventData.loser_hero_id.slice(-8)}
-                        </Text>
+                        <Text><strong>Old:</strong> {formatPrice(d.old_price)} SUI</Text>
+                        <Text><strong>New:</strong> {formatPrice(d.new_price)} SUI</Text>
+                      </>
+                    )}
+
+                    {event.type === "arena_created" && (
+                      <Text><strong>Arena ID:</strong> ...{d.arena_id.slice(-8)}</Text>
+                    )}
+
+                    {event.type === "arena_completed" && (
+                      <>
+                        <Text><strong>🏆 Winner:</strong> ...{d.winner_hero_id.slice(-8)}</Text>
+                        <Text><strong>💀 Loser:</strong> ...{d.loser_hero_id.slice(-8)}</Text>
                       </>
                     )}
                   </Flex>
+
                 </Flex>
               </Card>
             );

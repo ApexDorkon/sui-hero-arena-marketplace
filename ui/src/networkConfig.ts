@@ -3,10 +3,10 @@ import { createNetworkConfig } from "@mysten/dapp-kit";
 
 /**
  * Package ID from your deployment:
- * 0x8f9bbf88b2011477ac5f403b49b45c04fba0d4fe51314c1c059af0a736a38804
+ * 0x15b4a8098e2a8dc7e23214ff4447f3fbee4480ae0ceb08ccf9cfc969fbacb6ef
  */
 const PACKAGE_ID =
-  "0x8f9bbf88b2011477ac5f403b49b45c04fba0d4fe51314c1c059af0a736a38804";
+  "0x15b4a8098e2a8dc7e23214ff4447f3fbee4480ae0ceb08ccf9cfc969fbacb6ef";
 
 const { networkConfig, useNetworkVariable, useNetworkVariables } =
   createNetworkConfig({
